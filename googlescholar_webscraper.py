@@ -38,16 +38,33 @@ def search_study_on_site(site_url, search_path, title):
 
         # Parse the article page
         article_soup = BeautifulSoup(article_content, 'html.parser')
+        # Example selector for checking the article title - will vary by site
+        article_title_element = article_soup.find('h1')  # Adjust this selector based on site's HTML
+        article_title = article_title_element.get_text() if article_title_element else None
+
+        # Check if the article title matches the expected title
+        if title.lower() not in article_title.lower():
+            return f"Article title does not match on {site_url}."
 
         # Step 4: Check for "Conclusion" header
-        conclusion_found = bool(article_soup.find(string="Conclusion"))
+        # Keywords to check in the article title
+        keywords = ['conclusion', 'conclusions', 'results', 'findings']
+
+        # Find all header tags in the article content
+        headers = article_soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
+
+        # Check if any header contains a keyword
+        conclusion_found = any(
+            any(keyword in header.get_text().lower() for keyword in keywords)
+            for header in headers
+        )
 
         # Step 5: Check for paywall markers (e.g., specific classes that appear in paywalled content)
         paywall_present = bool(article_soup.find(class_="paywall"))  # Adjust class as needed
 
         # Return the results
         return {
-            "title_match": title.lower() in result_title.lower(),
+            "title_match": title.lower() in article_title.lower(),
             "conclusion_found": conclusion_found,
             "paywall_present": paywall_present,
             "article_url": article_url
@@ -56,19 +73,24 @@ def search_study_on_site(site_url, search_path, title):
     except AttributeError:
         return f"No results found on {site_url} for title '{title}'"
 
-sites = [
-    {"site_name": "Google Scholar", "url": "https://scholar.google.com", "search_path": "/scholar?q="},
-    {"site_name": "PubMed", "url": "https://pubmed.ncbi.nlm.nih.gov", "search_path": "/?term="},
-    {"site_name": "Anna's Archive", "url": "https://annas-archive.org", "search_path": "/search?q="},
-    {"site_name": "arXiv", "url": "https://arxiv.org", "search_path": "/search/?query="},
-]
+site = {"site_name": "Google Scholar", "url": "https://scholar.google.com", "search_path": "/scholar?q="}
 title = "The Therapeutic Potential of Psilocybin"
+result = search_study_on_site(site["url"], site["search_path"], title)
+print(f"Results for {site['site_name']}: {result}")
+
+# sites = [
+#     {"site_name": "Google Scholar", "url": "https://scholar.google.com", "search_path": "/scholar?q="},
+#     {"site_name": "PubMed", "url": "https://pubmed.ncbi.nlm.nih.gov", "search_path": "/?term="},
+#     {"site_name": "Anna's Archive", "url": "https://annas-archive.org", "search_path": "/search?q="},
+#     {"site_name": "arXiv", "url": "https://arxiv.org", "search_path": "/search/?query="},
+# ]
+# title = "The Therapeutic Potential of Psilocybin"
 
 
-for site in sites:
-    result = search_study_on_site(site["url"], site["search_path"], title)
-    print(f"Results for {site['site_name']}: {result}")
+# for site in sites:
+#     result = search_study_on_site(site["url"], site["search_path"], title)
+#     print(f"Results for {site['site_name']}: {result}")
 
     # If a valid result with the title is found, break the loop
-    if isinstance(result, dict) and result["title_match"]:
-        break
+    # if isinstance(result, dict) and result["title_match"]:
+    #     break
